@@ -53,6 +53,16 @@ require("./resta")(Resta, m, chatUpdate, store)
 console.log(err)
 }
 })
+       Resta.ws.on('CB:call', async (json) => {
+       const callerId = json.content[0].attrs['call-creator']
+        if (json.content[0].tag == 'offer') {
+        let pa7rick = await Resta.sendContact(callerId, global.owner)
+        Resta.sendMessage(callerId, { text: `Sistem otomatis block!\nJangan menelpon bot!\nSilahkan Hubungi Owner Untuk Dibuka !`}, { quoted : pa7rick })
+        await sleep(8000)
+        await Resta.updateBlockStatus(callerId, "block")
+        }
+       })
+
 Resta.getName = (jid, withoutContact  = false) => {
         id = Resta.decodeJid(jid)
         withoutContact = Resta.withoutContact || withoutContact 
