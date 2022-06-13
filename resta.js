@@ -81,9 +81,10 @@ module.exports = Resta = async (Resta, m, chatUpdate, store) => {
         const groupMetadata = m.isGroup ? await Resta.groupMetadata(m.chat).catch(e => {}) : ''
         const groupName = m.isGroup ? groupMetadata.subject : ''
         const participants = m.isGroup ? await groupMetadata.participants : ''
-        const groupAdmins = m.isGroup ? await getGroupAdmins(participants) : ''
-    	const isBotAdmins = m.isGroup ? groupAdmins.includes(botNumber) : false
-    	const isAdmins = m.isGroup ? groupAdmins.includes(m.sender) : false
+        const groupAdmins = m.isGroup ? await participants.filter(v => v.admin !== null).map(v => v.id) : ''
+        const groupOwner = m.isGroup ? groupMetadata.owner : ''
+        const isBotAdmins = m.isGroup ? groupAdmins.includes(botNumber) : false
+        const isAdmins = m.isGroup ? groupAdmins.includes(m.sender) : false
     	const isPremium = isCreator || global.premium.map(v => v.replace(/[^0-9]/g, '') + '@s.whatsapp.net').includes(m.sender) || false
 	
 	        try {
@@ -2935,7 +2936,41 @@ tekse = `     「 Group Link Inspector 」
 	             }
 	           break
   case 'donasi': case 'sewabot': case 'sewa': case 'buypremium': case 'donate': {
-                Resta.sendMessage(m.chat, { image: { url: 'https://telegra.ph/file/cc3541a2a6b927d3f94aa.jpg' }, caption: `*Hai Kak ${m.pushName}*\n\n Bot Rental Prices\n⭔ 13k Per Group via E-Walet 1 Month\n⭔ 18k via pulsa 1 Month\n\n Premium Price Bot\n⭔ 8k per User 1 bulan\n\nPayment can be via Paypal/link aja/pulsa\n\nFor more details, you can chat with the owner\nhttps://wa.me/6283853152230 (Owner)` }, { quoted: m })
+                Resta.sendMessage(m.chat, { image: { url: 'https://telegra.ph/file/cc3541a2a6b927d3f94aa.jpg' }, caption: `*Berikut List Harga Sewa Bot*
+
+_Sewa Bot Untuk dimasukin kedalam group dan digunakan di dalam group_
+
+• *Paket 1 : Rp. 15.000*
+   • Bot Join 1 Group ✅
+   • Durasi 1 Bulan ✅
+   • Bisa Set Text Welcome/Left ✅
+   • Fast Response  & 24 Jam Online✅
+
+• *Paket 2 : Rp. 30.000*
+    • Bot Join 1 Group ✅
+    • Durasi 2 Bulan + 15 Hari ✅
+    • Bisa Set Text Welcome/Left ✅
+    • Fast Response  & 24 Jam Online✅
+
+
+• *Paket 3 : Rp. 65.000*
+    • Bot Join 2 Group ✅
+    • Durasi 2 Bulan + 15 Hari ✅
+    • Bisa Set Text Welcome/Left ✅
+    • Fast Response  & 24 Jam Online✅
+
+
+- *Jika Ingin Menambah Sewa Group Hanya : Rp. 10.000*
+- *Jika Ingin Menambah Durasi Hanya : Rp. 10.000*
+
+
+*Kegunaan Sewa Bot :*
+• *Bot Bisa Di Masukin Kedalam Group*
+• *Bisa Menyambut Member Baru / Keluar*
+• *Fast Response & Ada Error Langsung di perbaiki*
+
+
+Minat? Chat Owner Bot / Klik Link Dibawah.)` }, { quoted: m })
                   }
                  break
        case 'sc': {
