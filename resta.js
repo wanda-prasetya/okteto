@@ -1258,7 +1258,7 @@ Menyukai : ${gai}
 	     case 'kick': {
 		           if (!m.isGroup) throw mess.group
                    if (!isBotAdmins) throw mess.botAdmin
-                   if (!isAdmins) throw mess.admin
+                   if (!groupAdmins) throw mess.admin
 		           let users = m.mentionedJid[0] ? m.mentionedJid[0] : m.quoted ? m.quoted.sender : text.replace(/[^0-9]/g, '')+'@s.whatsapp.net'
 		           await Resta.groupParticipantsUpdate(m.chat, [users], 'remove').then((res) => m.reply(jsonformat(res))).catch((err) => m.reply(jsonformat(err)))
 	                }
@@ -1266,7 +1266,7 @@ Menyukai : ${gai}
 	    case 'add': {
 		           if (!m.isGroup) throw mess.group
                    if (!isBotAdmins) throw mess.botAdmin
-                   if (!isAdmins) throw mess.admin
+                   if (!groupAdmins) throw mess.admin
 		           let users = m.quoted ? m.quoted.sender : text.replace(/[^0-9]/g, '')+'@s.whatsapp.net'
 		           await Resta.groupParticipantsUpdate(m.chat, [users], 'add').then((res) => m.reply(jsonformat(res))).catch((err) => m.reply(jsonformat(err)))
 	                }
@@ -1274,7 +1274,7 @@ Menyukai : ${gai}
 	   case 'promote': {
 		          if (!m.isGroup) throw mess.group
                   if (!isBotAdmins) throw mess.botAdmin
-                  if (!isAdmins) throw mess.admin
+                  if (!groupAdmins) throw mess.admin
 		          let users = m.mentionedJid[0] ? m.mentionedJid[0] : m.quoted ? m.quoted.sender : text.replace(/[^0-9]/g, '')+'@s.whatsapp.net'
 		          await Resta.groupParticipantsUpdate(m.chat, [users], 'promote').then((res) => m.reply(jsonformat(res))).catch((err) => m.reply(jsonformat(err)))
 	               }
@@ -1282,7 +1282,7 @@ Menyukai : ${gai}
 	case 'demote': {
 		           if (!m.isGroup) throw mess.group
                    if (!isBotAdmins) throw mess.botAdmin
-                   if (!isAdmins) throw mess.admin
+                   if (!groupAdmins) throw mess.admin
 		           let users = m.mentionedJid[0] ? m.mentionedJid[0] : m.quoted ? m.quoted.sender : text.replace(/[^0-9]/g, '')+'@s.whatsapp.net'
 		           await Resta.groupParticipantsUpdate(m.chat, [users], 'demote').then((res) => m.reply(jsonformat(res))).catch((err) => m.reply(jsonformat(err)))
 	               }
@@ -1290,7 +1290,7 @@ Menyukai : ${gai}
 	    case 'setname': case 'setsubject': {
                    if (!m.isGroup) throw mess.group
                    if (!isBotAdmins) throw mess.botAdmin
-                   if (!isAdmins) throw mess.admin
+                   if (!groupAdmins) throw mess.admin
                    if (!text) throw 'Textnya ap ?'
                    await Resta.groupUpdateSubject(m.chat, text).then((res) => m.reply(mess.success)).catch((err) => m.reply(jsonformat(err)))
                     }
@@ -1298,14 +1298,14 @@ Menyukai : ${gai}
         case 'setdesc': case 'setdesk': {
                    if (!m.isGroup) throw mess.group
                    if (!isBotAdmins) throw mess.botAdmin
-                   if (!isAdmins) throw mess.admin
+                   if (!groupAdmins) throw mess.admin
                    if (!text) throw 'Textnya ap ?'
                    await Resta.groupUpdateDescription(m.chat, text).then((res) => m.reply(mess.success)).catch((err) => m.reply(jsonformat(err)))
                    }
                    break
         case 'setppgroup': case 'setppgrup': case 'setppgc': {
                   if (!m.isGroup) throw mess.group
-                  if (!isAdmins) throw mess.admin
+                  if (!groupAdmins) throw mess.admin
                   if (!quoted) throw `Kirim/Reply Image Dengan Caption ${prefix + command}`
                   if (!/image/.test(mime)) throw `Kirim/Reply Image Dengan Caption ${prefix + command}`
                   if (/webp/.test(mime)) throw `Kirim/Reply Image Dengan Caption ${prefix + command}`
@@ -1317,7 +1317,7 @@ Menyukai : ${gai}
        case 'tagall': {
                   if (!m.isGroup) throw mess.group
                   if (!isBotAdmins) throw mess.botAdmin
-                  if (!isAdmins) throw mess.admin
+                  if (!groupAdmins) throw mess.admin
 let teks = `══✪〘 *👥 Tag All* 〙✪══
  
  ➲ *Pesan : ${q ? q : 'kosong'}*\n\n`
@@ -1330,7 +1330,7 @@ let teks = `══✪〘 *👥 Tag All* 〙✪══
        case 'hidetag': {
                   if (!m.isGroup) throw mess.group
                   if (!isBotAdmins) throw mess.botAdmin
-                  if (!isAdmins) throw mess.admin
+                  if (!groupAdmins) throw mess.admin
                   Resta.sendMessage(m.chat, { text : q ? q : '' , mentions: participants.map(a => a.id)}, { quoted: m })
                   }
                  break 
@@ -1495,7 +1495,7 @@ ${vote[m.chat][2].map((v, i) => `├ ${i + 1}. @${v.split`@`[0]}`).join('\n')}
         case 'group': case 'grup': {
                   if (!m.isGroup) throw mess.group
                   if (!isBotAdmins) throw mess.botAdmin
-                  if (!isAdmins) throw mess.admin
+                  if (!groupAdmins) throw mess.admin
                   if (args[0] === 'close'){
                   await Resta.groupSettingUpdate(m.chat, 'announcement').then((res) => m.reply(`Sukses Menutup Group`)).catch((err) => m.reply(jsonformat(err)))
                   } else if (args[0] === 'open'){
@@ -1512,7 +1512,7 @@ ${vote[m.chat][2].map((v, i) => `├ ${i + 1}. @${v.split`@`[0]}`).join('\n')}
          case 'editinfo': {
                    if (!m.isGroup) throw mess.group
                    if (!isBotAdmins) throw mess.botAdmin
-                   if (!isAdmins) throw mess.admin
+                   if (!groupAdmins) throw mess.admin
                    if (args[0] === 'open'){
                    await Resta.groupSettingUpdate(m.chat, 'unlocked').then((res) => m.reply(`Sukses Membuka Edit Info Group`)).catch((err) => m.reply(jsonformat(err)))
                    } else if (args[0] === 'close'){
@@ -1529,7 +1529,7 @@ ${vote[m.chat][2].map((v, i) => `├ ${i + 1}. @${v.split`@`[0]}`).join('\n')}
          case 'antilink': {
                    if (!m.isGroup) throw mess.group
                    if (!isBotAdmins) throw mess.botAdmin
-                   if (!isAdmins) throw mess.admin
+                   if (!groupAdmins) throw mess.admin
                    if (args[0] === "enable") {
                    if (db.data.chats[m.chat].antilink) return m.reply(`Sudah Aktif Sebelumnya`)
                    db.data.chats[m.chat].antilink = true
@@ -1550,7 +1550,7 @@ ${vote[m.chat][2].map((v, i) => `├ ${i + 1}. @${v.split`@`[0]}`).join('\n')}
           case 'mute': {
                     if (!m.isGroup) throw mess.group
                     if (!isBotAdmins) throw mess.botAdmin
-                    if (!isAdmins) throw mess.admin
+                    if (!groupAdmins) throw mess.admin
                     if (args[0] === "on") {
                     if (db.data.chats[m.chat].mute) return m.reply(`Sudah Aktif Sebelumnya`)
                     db.data.chats[m.chat].mute = true
@@ -1578,7 +1578,7 @@ ${vote[m.chat][2].map((v, i) => `├ ${i + 1}. @${v.split`@`[0]}`).join('\n')}
             case 'ephemeral': {
                        if (!m.isGroup) throw mess.group
                        if (!isBotAdmins) throw mess.botAdmin
-                       if (!isAdmins) throw mess.admin
+                       if (!groupAdmins) throw mess.admin
                        if (!text) throw 'Masukkan value enable/disable'
                        if (args[0] === 'enable') {
                        await Resta.sendMessage(m.chat, { disappearingMessagesInChat: WA_DEFAULT_EPHEMERAL }).then((res) => m.reply(jsonformat(res))).catch((err) => m.reply(jsonformat(err)))
