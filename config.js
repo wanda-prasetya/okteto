@@ -13,7 +13,7 @@ global.APIKeys = {
 
 // Other
 global.owner = ['6283853152230']
-global.premium = ['6283853152230']
+global.rkyt = []
 global.packname = '🤖𝚁𝚠•𝙱𝚘𝚝~🤖'
 global.author = 'WhatsApp Bot'
 global.sessionName = 'RestaMd'
@@ -32,11 +32,6 @@ global.mess = {
     wait: 'Scraping metadata......',
     endLimit: 'Limit Harian Anda Telah Habis, Limit Akan Direset Setiap Jam 12',
 }
-global.limitawal = {
-    premium: "Infinity",
-    free: 20,
-    monayawal: 1000
-}
    global.rpg = {
    darahawal: 100,
    besiawal: 95,
@@ -46,8 +41,9 @@ global.limitawal = {
    potionawal: 5
 }
 global.limitawal = {
-    rakyat: "Infinity",
-    free: 20
+    rakyat: "Unlimited",
+    free: 60,
+    monayawal: 1000
 }
 global.thumb = { url : 'https://telegra.ph/file/52b4c3c1c631254af23b8.jpg'}
 global.visoka = { url: 'https://a.uguu.se/tqncTWxf.mp4' }
