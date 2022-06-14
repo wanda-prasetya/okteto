@@ -2118,6 +2118,7 @@ case 'style': case 'styletext': {
                    }
                    break
 	    case 'getmusic': {
+		          if (isLimit < 1) throw mess.endLimit
                   let { yta } = require('./lib/y2mate')
                   if (!text) throw `Example : ${prefix + command} 1`
                   if (!m.quoted) return m.reply('Reply Pesan')
@@ -2132,6 +2133,7 @@ case 'style': case 'styletext': {
                   }
                   break
             case 'getvideo': {
+            	  if (isLimit < 1) throw mess.endLimit
                   let { ytv } = require('./lib/y2mate')
                   if (!text) throw `Example : ${prefix + command} 1`
                   if (!m.quoted) return m.reply('Reply Pesan')
@@ -2145,6 +2147,7 @@ case 'style': case 'styletext': {
                   }
                  break
       case 'tiktok': {
+      	      if (isLimit < 1) throw mess.endLimit
                 if (!q) throw `Example : ${prefix + command} https://vt.tiktok.com/ZSdpahEe5/?k=1`
                 if (!isUrl(q)) throw m.reply(mess.link)  
                 if (!text.includes('tiktok.com')) throw m.reply(mess.link) 
@@ -2169,7 +2172,7 @@ case 'style': case 'styletext': {
    	         if (isLimit < 1) throw mess.endLimit
                 if (!q) throw `Example : ${prefix + command} https://vt.tiktok.com/ZSdpahEe5/?k=1`
                 if (!isUrl(q)) throw m.reply(mess.link)  
-                if (!text.includes('https://vt.tiktok.com')) throw m.reply(mess.link) 
+                if (!text.includes('tiktok.com')) throw m.reply(mess.link) 
                 noapi.ttdownloader(`${q}`) 
                .then(result => {
                 const { wm, nowm, audio } = result
