@@ -105,6 +105,7 @@ Resta.ev.on('groups.update', async pea => {
 
      Resta.ev.on('group-participants.update', async (data) => {
                 if (!wlcm.includes(data.id)) return
+                try {
 	            let metadata = await Resta.groupMetadata(data.id)
                 for (let i of data.participants) {
 		        try {
@@ -121,8 +122,7 @@ Resta.ev.on('groups.update', async pea => {
 	} catch (e) {
 	  console.log(e)
 	}
-  }
-
+ }) 
     
 // Setting
     Resta.decodeJid = (jid) => {
