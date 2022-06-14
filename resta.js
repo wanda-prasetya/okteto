@@ -16,11 +16,14 @@ const speed = require('performance-now')
 const { performance } = require('perf_hooks')
 const { Primbon } = require('scrape-primbon')
 const primbon = new Primbon()
+const { isLimit, limitAdd, getLimit, giveLimit, addBalance, kurangBalance, getBalance, isGame, gameAdd, givegame, cekGLimit } = require('./lib/limit.js');
 const textpro = require('./lib/textpro')
 const { pinterest } = require("./lib/pinterest")
 const { smsg, formatp, tanggal, formatDate, getTime, isUrl, sleep, clockString, runtime, fetchJson, getBuffer, jsonformat, format, parseMention, getRandom, getGroupAdmins } = require('./lib/myfunc')
 const noapi = require('./lib/api') 
 const { yta } = require('./lib/y2mate')
+const { Gempa } = require("./lib/gempa");
+const { jadwaltv }= require('./lib/jadwaltv');
 
 
 global.db = JSON.parse(fs.readFileSync('./src/database.json'))
@@ -52,7 +55,9 @@ let vote = db.data.others.vote = []
 let _limit = JSON.parse(fs.readFileSync('./storage/user/limit.json'));
 let _buruan = JSON.parse(fs.readFileSync('./storage/user/hasil_buruan.json'));
 let _darahOrg = JSON.parse(fs.readFileSync('./storage/user/darah.json'))
-
+/***********/
+let limit = JSON.parse(fs.readFileSync('./database/limit.json'));
+let balance = JSON.parse(fs.readFileSync('./database/balance.json'));
 
 module.exports = Resta = async (Resta, m, chatUpdate, store) => {
     try {
@@ -77,7 +82,6 @@ module.exports = Resta = async (Resta, m, chatUpdate, store) => {
 		let dt = moment(Date.now()).tz('Asia/Jakarta').locale('id').format('a')
 		const ucapanWaktu = "Selamat "+dt.charAt(0).toUpperCase() + dt.slice(1)
         // Group
-       
         const groupMetadata = m.isGroup ? await Resta.groupMetadata(m.chat).catch(e => {}) : ''
         const groupName = m.isGroup ? groupMetadata.subject : ''
         const participants = m.isGroup ? await groupMetadata.participants : ''
@@ -85,11 +89,13 @@ module.exports = Resta = async (Resta, m, chatUpdate, store) => {
         const groupOwner = m.isGroup ? groupMetadata.owner : ''
         const isBotAdmins = m.isGroup ? groupAdmins.includes(botNumber) : false
         const isAdmins = m.isGroup ? groupAdmins.includes(m.sender) : false
-    	const isPremium = isCreator || global.premium.map(v => v.replace(/[^0-9]/g, '') + '@s.whatsapp.net').includes(m.sender) || false
+	   ///OTHERS///
+	    const isRakyat = isCreator || global.rkyt.map(v => v.replace(/[^0-9]/g, '') + '@s.whatsapp.net').includes(m.sender) || false
+	
 	
 	        try {
             let isNumber = x => typeof x === 'number' && !isNaN(x)
-            let limitUser = isPremium ? global.limitawal.premium : global.limitawal.free
+            let limitUser = isRakyat ? global.limitawal.rakyat : global.limitawal.free
             let user = global.db.data.users[m.sender]
             if (typeof user !== 'object') global.db.data.users[m.sender] = {}
             if (user) {
@@ -136,22 +142,24 @@ module.exports = Resta = async (Resta, m, chatUpdate, store) => {
 	       setInterval(() => {
             fs.writeFileSync('./src/database.json', JSON.stringify(global.db, null, 2))
              }, 60 * 1000)
-
+          
+             if (!isRakyat) {
+             rkyt.push(m.sender.split("@")[0])
+            }
         // Push Message To Console && Auto Read
             if (m.message) {
             Resta.sendReadReceipt(m.chat, m.sender, [m.key.id])
-           Resta.sendPresenceUpdate('composing', m.chat)
-           Resta.sendPresenceUpdate('available', m.chat) 
+            addBalance(m.sender, randomNomor(574), balance)
             console.log(chalk.black(chalk.bgWhite('[ PESAN ]')), chalk.black(chalk.bgGreen(new Date)), chalk.black(chalk.bgBlue(budy || m.mtype)) + '\n' + chalk.magenta('=> Dari'), chalk.green(pushname), chalk.yellow(m.sender) + '\n' + chalk.blueBright('=> Di'), chalk.green(m.isGroup ? pushname : 'Private Chat', m.chat))
             }
 	     // reset limit every 12 hours
             let cron = require('node-cron')
             cron.schedule('00 12 * * *', () => {
-            let user = Object.keys(global.db.data.users)
-            let limitUser = isPremium ? global.limitawal.premium : global.limitawal.free
-            for (let jid of user) global.db.data.users[jid].limit = limitUser
+            let user = Object.keys(global.db.users)
+            let limitUser = isPremium ? global.limitawal.rakyat : global.limitawal.free
+            for (let jid of user) global.db.users[jid].limit = limitUser
             console.log('Reseted Limit')
-            }, {
+              }, {
             scheduled: true,
             timezone: "Asia/Jakarta"
              })
@@ -177,26 +185,30 @@ module.exports = Resta = async (Resta, m, chatUpdate, store) => {
            }
            const pickRandom = (arr) => {
 		   return arr[Math.floor(Math.random() * arr.length)]
-		  }
+		   }
+		   function randomNomor(angka){
+           return Math.floor(Math.random() * angka) + 1
+           }
+		
            // Respon Cmd with media
-          if (isMedia && m.msg.fileSha256 && (m.msg.fileSha256.toString('base64') in global.db.data.sticker)) {
-          let hash = global.db.data.sticker[m.msg.fileSha256.toString('base64')]
-          let { text, mentionedJid } = hash
-          let messages = await generateWAMessage(m.chat, { text: text, mentions: mentionedJid }, {
-          userJid: Resta.user.id,
+           if (isMedia && m.msg.fileSha256 && (m.msg.fileSha256.toString('base64') in global.db.sticker)) {
+           let hash = global.db.sticker[m.msg.fileSha256.toString('base64')]
+           let { text, mentionedJid } = hash
+           let messages = await generateWAMessage(m.chat, { text: text, mentions: mentionedJid }, {
+           userJid: Resta.user.id,
           quoted: m.quoted && m.quoted.fakeObj
            })
-           messages.key.fromMe = areJidsSameUser(m.sender, Resta.user.id)
-           messages.key.id = m.key.id
-           messages.pushName = m.pushName
-           if (m.isGroup) messages.participant = m.sender
-           let msg = {
-            ...chatUpdate,
-            messages: [proto.WebMessageInfo.fromObject(messages)],
-            type: 'append'
-            }
-            Resta.ev.emit('messages.upsert', msg)
-            }
+          messages.key.fromMe = areJidsSameUser(m.sender, Resta.user.id)
+          messages.key.id = m.key.id
+          messages.pushName = m.pushName
+          if (m.isGroup) messages.participant = m.sender
+          let msg = {
+          ...chatUpdate,
+          messages: [proto.WebMessageInfo.fromObject(messages)],
+          type: 'append'
+           }
+           Resta.ev.emit('messages.upsert', msg)
+           }
 	    
 	        if (('family100'+m.chat in _family100) && isCmd) {
             kuis = true
@@ -262,7 +274,7 @@ ${Array.from(room.jawaban, (jawaban, index) => {
               if (budy.toLowerCase() == jawaban) {
               await Resta.sendButtonText(m.chat, [{ buttonId: 'tebakkata', buttonText: { displayText: 'Tebak Kata' }, type: 1 }], `🎮 Tebak Kata 🎮\n\nJawaban Benar 🎉\n\nIngin bermain lagi? tekan button dibawah`, Resta.user.name, m)
               delete tebakkata[m.sender.split('@')[0]]
-              } else m.reply('*Jawaban Salah!*')
+              } 
               }
 
             if (caklontong.hasOwnProperty(m.sender.split('@')[0]) && isCmd) {
@@ -497,7 +509,7 @@ getEmerald,
 getUmpan,
 getPotion
 } = require('./storage/user/alat_tukar.js')
-const { 
+ const { 
 addInventoriMonay, 
 cekDuluJoinAdaApaKagaMonaynyaDiJson, 
 addMonay,
@@ -554,8 +566,24 @@ const isInventoriBuruan = cekDuluHasilBuruanNya(m.sender)
 const isInventoryLimit = cekDuluJoinAdaApaKagaLimitnyaDiJson(m.sender)
 const isInventoryMonay = cekDuluJoinAdaApaKagaMonaynyaDiJson(m.sender)
 const ikan = ['🐟','🐠','🐡']   
-
+                
+                  
         switch(command) {
+      	case 'limit':
+                      m.reply(`*Sisa Limit Anda : ${global.db.users[m.sender].limit}*\n\n*Balance : ${getBalance(m.sender, balance)}*\n\n*Monay : ${getMonay(m.sender)}*`)
+                      break
+           case 'buymonay':{ 
+                       if (!isInventoryMonay){ addInventoriMonay(m.sender) }
+                       if (!q) return reply(`Kirim perintah *${prefix}buylimit* jumlah limit yang ingin dibeli\n\nHarga 1 limit = $1000 balance`)
+                       if (q.includes('-')) return reply(`Jangan menggunakan -`)
+                       if (isNaN(q)) return reply(`Harus berupa angka`)
+                       let ane = Number(randomNomor(q) * 10)
+                       if (getBalance(m.sender, balance) < ane) return m.reply(`Balance kamu tidak mencukupi untuk pembelian ini`)
+                       kurangBalance(m.sender, ane, balance)
+                       addMonay(m.sender, randomNomor(q), limit)
+                       m.reply(`Pembeliaan Monay sebanyak ${q} berhasil\n\nSisa Balance : $${getBalance(m.sender, balance)}\nSisa Monay kamu* : ${getMonay(m.sender)}`)
+                       }
+                       break
      case 'leaderboard':{      
                 let txt = `「 *LEADERBOARD* 」\n\n`
                 for (let i of _buruan){
@@ -599,13 +627,14 @@ const ikan = ['🐟','🐠','🐡']
                 kurangUmpan(m.sender, 1)
                 addIkan(m.sender, ditangkap)	     
                 }   
-                 break  
-       case 'darah':{
-               if (!isDarah){ addInventoriDarah(m.sender, DarahAwal) }
-               let dapat =  getDarah(m.sender)
-               m.reply(`${dapat}`)
-                }
-               break
+                 breakbreak
+                 
+     case 'darah':{
+                if (!isDarah){ addInventoriDarah(m.sender, DarahAwal) }
+                let dapat =  getDarah(m.sender)
+                m.reply(`${dapat}`)
+                 }
+                break
   case 'bacok':{
                if (isCekDarah < 1) return reply('Darah kamu habis')
                kurangDarah(m.sender, 7)
@@ -613,15 +642,15 @@ const ikan = ['🐟','🐠','🐡']
                }
                break
 case 'mining': case 'menambang':{
-              if (!isInventory){ addInventori(m.sender) }
-              if (isCekDarah < 1) return m.reply('Kamu kelelahan!, cobalah heal menggunakan potion') 
-              let besi = [1,2,5,0,3,0,1,1,4,1,5,0,0]
-              let emas = [0,1,2,3,0,0,0,1,1,0,0,2]
-              let emerald = [0,0,1,0,0,1,0,2,1,0,0,1]
-              var besinya = besi[Math.floor(Math.random() * besi.length)]  
-              var emasnya = emas[Math.floor(Math.random() * emas.length)]  
-              var emeraldnya = emerald[Math.floor(Math.random() * emerald.length)]  
-              setTimeout( () => {
+               if (!isInventory){ addInventori(m.sender) }
+               if (isCekDarah < 1) return m.reply('Kamu kelelahan!, cobalah heal menggunakan potion') 
+               let besi = [1,2,5,0,3,0,1,1,4,1,5,0,0]
+               let emas = [0,1,2,3,0,0,0,1,1,0,0,2]
+               let emerald = [0,0,1,0,0,1,0,2,1,0,0,1]
+               var besinya = besi[Math.floor(Math.random() * besi.length)]  
+               var emasnya = emas[Math.floor(Math.random() * emas.length)]  
+               var emeraldnya = emerald[Math.floor(Math.random() * emerald.length)]  
+               setTimeout( () => {
                let caption = `[ HASIL MENAMBANG ]\n*Besi* : ${besinya}\n*Emas* : ${emasnya}\n*Emerald* : ${emeraldnya}`
                let buttons = [{
                buttonId: `${prefix + command}`, 
@@ -656,7 +685,7 @@ case 'mining': case 'menambang':{
                 if (args[0] === 'potion'){
                 let noh = 100000 * anu
                 if (!args[1]) return m.reply(`Example : ${prefix + command} potion 2\n 1 potion = 100000 monay`)
-                if (isMonay < noh) return m.reply('Sisa monay kamu tidak mencukupi untuk pembelian ini')
+                if (isMonay < noh) return m.reply('Sisa Balance kamu tidak mencukupi untuk pembelian ini')
                 kurangMonay(m.sender, noh)
                 var apalu = anu * 1
                 addPotion(m.sender, apalu)
@@ -667,7 +696,7 @@ case 'mining': case 'menambang':{
                 if (args[0] === 'umpan'){
                 let noh = 5000 * anu
                 if (!args[1]) return m.reply(`Example : ${prefix + command} umpan 2\n 1 umpan = 2500 monay`)
-                if (isMonay < noh) return m.reply('Sisa monay kamu tidak mencukupi untuk pembelian ini')
+                if (isMonay < noh) return m.reply('Sisa Balance kamu tidak mencukupi untuk pembelian ini')
                 kurangMonay(m.sender, noh)
                 var apalu = anu * 1
                 addUmpan(m.sender, apalu)
@@ -678,14 +707,14 @@ case 'mining': case 'menambang':{
                   if (args[0] === 'limit'){
                   let noh = 35000 * anu
                   if (!args[1]) return m.reply(`Example : ${prefix + command} limit 2\n 1 limit = 35000 monay`)
-                  if (isMonay < noh) return m.reply('Sisa monay kamu tidak mencukupi untuk pembelian ini')
+                  if (isMonay < noh) return m.reply('Sisa Balance kamu tidak mencukupi untuk pembelian ini')
                   kurangMonay(m.sender, noh)
                   var apalu = anu * 1
                  addLimit(m.sender, apalu)
                  setTimeout( () => {
                   m.reply(`Transaksi berhasil ✔️\n*Sisa monay kamu* : ${getMonay(m.sender)}\n*Limit kamu* : ${getLimit(m.sender)}`)
                   }, 2000) 
-                  } else { m.reply("Format salah!") }
+                  } else { m.reply("format Yang Tersedia\nLimit\nUmpan\nPotion!") }
                   }
                   break
         case 'sell': case 'jual':{
@@ -970,6 +999,9 @@ Silahkan @${m.mentionedJid[0].split`@`[0]} untuk ketik terima/tolak`
                    }
                    break    
 	   case 'family100': {
+		            if (isLimit < 1) throw mess.endLimit
+		            db.users[m.sender].limit -= 1 // -1 limit
+		            m.reply(`Satu limit terpakai\nSisa limit kamu : ${global.db.users[m.sender].limit}`)
                     if ('family100'+m.chat in _family100) {
                     m.reply('Masih Ada Sesi Yang Belum Diselesaikan!')
                     throw false
@@ -992,7 +1024,10 @@ Silahkan @${m.mentionedJid[0].split`@`[0]} untuk ketik terima/tolak`
                      tex = m.quoted ? m.quoted.text ? m.quoted.text : q ? q : m.text : q ? q : m.text
                      m.reply(tex.replace(/[aiueo]/g, ter).replace(/[AIUEO]/g, ter.toUpperCase()))
                      break
-            case 'tebaklagu': {
+        case 'tebaklagu': {
+        	        if (isLimit < 1) throw mess.endLimit
+		            db.users[m.sender].limit -= 1 // -1 limit
+		            m.reply(`Satu limit terpakai\nSisa limit kamu : ${global.db.users[m.sender].limit}`)
                     if (tebaklagu.hasOwnProperty(m.sender.split('@')[0])) throw "Masih Ada Sesi Yang Belum Diselesaikan!"
                     let anu = await fetchJson('https://fatiharridho.github.io/tebaklagu.json')
                     let result = anu[Math.floor(Math.random() * anu.length)]
@@ -1009,6 +1044,9 @@ Silahkan @${m.mentionedJid[0].split`@`[0]} untuk ketik terima/tolak`
                     }
                     break
          case 'tebakgambar': {
+         	       if (isLimit < 1) throw mess.endLimit
+		            db.users[m.sender].limit -= 1 // -1 limit
+		            m.reply(`Satu limit terpakai\nSisa limit kamu : ${global.db.users[m.sender].limit}`)
                     if (tebakgambar.hasOwnProperty(m.sender.split('@')[0])) throw "Masih Ada Sesi Yang Belum Diselesaikan!"
                     let anu = await fetchJson('https://raw.githubusercontent.com/BochilTeam/database/master/games/tebakgambar.json')
                     let result = anu[Math.floor(Math.random() * anu.length)]
@@ -1024,6 +1062,9 @@ Silahkan @${m.mentionedJid[0].split`@`[0]} untuk ketik terima/tolak`
                     }
                     break
           case 'tebakbendera': {
+          	      if (isLimit < 1) throw mess.endLimit
+		            db.users[m.sender].limit -= 1 // -1 limit
+		            m.reply(`Satu limit terpakai\nSisa limit kamu : ${global.db.users[m.sender].limit}`)
                     if (tebakbendera.hasOwnProperty(m.sender.split('@')[0])) throw "Masih Ada Sesi Yang Belum Diselesaikan!"
                     let anu = await fetchJson('https://raw.githubusercontent.com/BochilTeam/database/master/games/tebakbendera.json')
                     let result = anu[Math.floor(Math.random() * anu.length)]
@@ -1039,6 +1080,9 @@ Silahkan @${m.mentionedJid[0].split`@`[0]} untuk ketik terima/tolak`
                     }
                     break
          case 'tebakkata': {
+         	       if (isLimit < 1) throw mess.endLimit
+		            db.users[m.sender].limit -= 1 // -1 limit
+		            m.reply(`Satu limit terpakai\nSisa limit kamu : ${global.db.users[m.sender].limit}`)
                     if (tebakkata.hasOwnProperty(m.sender.split('@')[0])) throw "Masih Ada Sesi Yang Belum Diselesaikan!"
                     let anu = await fetchJson('https://raw.githubusercontent.com/BochilTeam/database/master/games/tebakkata.json')
                     let result = anu[Math.floor(Math.random() * anu.length)]
@@ -1054,6 +1098,9 @@ Silahkan @${m.mentionedJid[0].split`@`[0]} untuk ketik terima/tolak`
                     }
                     break
          case 'tebakkuis': {
+         	       if (isLimit < 1) throw mess.endLimit
+		            db.users[m.sender].limit -= 1 // -1 limit
+		            m.reply(`Satu limit terpakai\nSisa limit kamu : ${global.db.users[m.sender].limit}`)
                     if (tebakkuis.hasOwnProperty(m.sender.split('@')[0])) throw "Masih Ada Sesi Yang Belum Diselesaikan!"
                     let anu = await fetchJson('https://raw.githubusercontent.com/BochilTeam/database/master/games/tebaktebakan.json')
                     let result = anu[Math.floor(Math.random() * anu.length)]
@@ -1069,6 +1116,9 @@ Silahkan @${m.mentionedJid[0].split`@`[0]} untuk ketik terima/tolak`
                     }
                     break
          case 'tebakkalimat': {
+         	       if (isLimit < 1) throw mess.endLimit
+		            db.users[m.sender].limit -= 1 // -1 limit
+		            m.reply(`Satu limit terpakai\nSisa limit kamu : ${global.db.users[m.sender].limit}`)
                     if (tebakkalimat.hasOwnProperty(m.sender.split('@')[0])) throw "Masih Ada Sesi Yang Belum Diselesaikan!"
                     let anu = await fetchJson('https://raw.githubusercontent.com/BochilTeam/database/master/games/tebakkalimat.json')
                     let result = anu[Math.floor(Math.random() * anu.length)]
@@ -1084,6 +1134,9 @@ Silahkan @${m.mentionedJid[0].split`@`[0]} untuk ketik terima/tolak`
                     }
                     break
          case 'siapakahaku': {
+         	       if (isLimit < 1) throw mess.endLimit
+		            db.users[m.sender].limit -= 1 // -1 limit
+		            m.reply(`Satu limit terpakai\nSisa limit kamu : ${global.db.users[m.sender].limit}`)
                     if (siapakahaku.hasOwnProperty(m.sender.split('@')[0])) throw "Masih Ada Sesi Yang Belum Diselesaikan!"
                     let anu = await fetchJson('https://raw.githubusercontent.com/BochilTeam/database/master/games/siapakahaku.json')
                     let result = anu[Math.floor(Math.random() * anu.length)]
@@ -1099,6 +1152,9 @@ Silahkan @${m.mentionedJid[0].split`@`[0]} untuk ketik terima/tolak`
                     }
                     break
         case 'tebaklirik': {
+        	        if (isLimit < 1) throw mess.endLimit
+		            db.users[m.sender].limit -= 1 // -1 limit
+		            m.reply(`Satu limit terpakai\nSisa limit kamu : ${global.db.users[m.sender].limit}`)
                     if (tebaklirik.hasOwnProperty(m.sender.split('@')[0])) throw "Masih Ada Sesi Yang Belum Diselesaikan!"
                     let anu = await fetchJson('https://raw.githubusercontent.com/BochilTeam/database/master/games/tebaklirik.json')
                     let result = anu[Math.floor(Math.random() * anu.length)]
@@ -1114,6 +1170,9 @@ Silahkan @${m.mentionedJid[0].split`@`[0]} untuk ketik terima/tolak`
                     }
                     break
          case 'caklontong': {
+         	       if (isLimit < 1) throw mess.endLimit
+		            db.users[m.sender].limit -= 1 // -1 limit
+		            m.reply(`Satu limit terpakai\nSisa limit kamu : ${global.db.users[m.sender].limit}`)
                     if (caklontong.hasOwnProperty(m.sender.split('@')[0])) throw "Masih Ada Sesi Yang Belum Diselesaikan!"
                     let anu = await fetchJson('https://raw.githubusercontent.com/BochilTeam/database/master/games/caklontong.json')
                     let result = anu[Math.floor(Math.random() * anu.length)]
@@ -1131,6 +1190,9 @@ Silahkan @${m.mentionedJid[0].split`@`[0]} untuk ketik terima/tolak`
                      }
                      break
           case 'kuismath': case 'math': {
+          	       if (isLimit < 1) throw mess.endLimit
+		            db.users[m.sender].limit -= 1 // -1 limit
+		            m.reply(`Satu limit terpakai\nSisa limit kamu : ${global.db.users[m.sender].limit}`)
                      if (kuismath.hasOwnProperty(m.sender.split('@')[0])) throw "Masih Ada Sesi Yang Belum Diselesaikan!"
                      let { genMath, modes } = require('./src/math')
                      if (!text) throw `Mode: ${Object.keys(modes).join(' | ')}\nContoh penggunaan: ${prefix}math medium`
@@ -1661,8 +1723,10 @@ case 'style': case 'styletext': {
 	                   }
 	                   break
             case 'sticker': case 's': case 'sgif': case 'stickergif': {
-                       if (!quoted) throw `Balas Video/Image Dengan Caption ${prefix + command}`
-                       m.reply(mess.wait)
+                        if (!quoted) throw `Balas Video/Image Dengan Caption ${prefix + command}`
+                        if (isLimit < 1) throw mess.endLimit
+		               db.users[m.sender].limit -= 1 // -1 limit
+		               m.reply(`Satu limit terpakai\nSisa limit kamu : ${global.db.users[m.sender].limit}`)
                        if (/image/.test(mime)) {
                        let media = await quoted.download()
                        let encmedia = await Resta.sendImageAsSticker(m.chat, media, m, { packname: global.packname, author: global.author })
@@ -1695,6 +1759,9 @@ case 'style': case 'styletext': {
 		               let [emoji1, emoji2] = text.split`+`
 		               if (!emoji1) throw `Example : ${prefix + command} 😅+🤔`
 		               if (!emoji2) throw `Example : ${prefix + command} 😅+🤔`
+		               if (isLimit < 1) throw mess.endLimit
+		               db.users[m.sender].limit -= 1 // -1 limit
+		               m.reply(`Satu limit terpakai\nSisa limit kamu : ${global.db.users[m.sender].limit}`)
 		               let anu = await fetchJson(`https://tenor.googleapis.com/v2/featured?key=AIzaSyAyimkuYQYF_FXVALexPuGQctUWRURdCYQ&contentfilter=high&media_filter=png_transparent&component=proactive&collection=emoji_kitchen_v5&q=${encodeURIComponent(emoji1)}_${encodeURIComponent(emoji2)}`)
 		               for (let res of anu.results) {
 		               let encmedia = await Resta.sendImageAsSticker(m.chat, res.url, m, { packname: global.packname, author: global.author, categories: res.tags })
@@ -1703,7 +1770,10 @@ case 'style': case 'styletext': {
 	                    }
 	                   break
 	    case 'emojimix2': {
-	                 if (!text) throw `Example : ${prefix + command} 😅`
+	                  if (!text) throw `Example : ${prefix + command} 😅`
+	                  if (isLimit < 1) throw mess.endLimit
+		             db.users[m.sender].limit -= 1 // -1 limit
+		             m.reply(`Satu limit terpakai\nSisa limit kamu : ${global.db.users[m.sender].limit}`)
 		             let anu = await fetchJson(`https://tenor.googleapis.com/v2/featured?key=AIzaSyAyimkuYQYF_FXVALexPuGQctUWRURdCYQ&contentfilter=high&media_filter=png_transparent&component=proactive&collection=emoji_kitchen_v5&q=${encodeURIComponent(text)}`)
 		             for (let res of anu.results) {
 		             let encmedia = await Resta.sendImageAsSticker(m.chat, res.url, m, { packname: global.packname, author: global.author, categories: res.tags })
@@ -1713,14 +1783,16 @@ case 'style': case 'styletext': {
 	                  break
 	       case 'attp': case 'ttp': {
                      if (!text) throw `Example : ${prefix + command} text`
-                     await Resta.sendMedia(m.chat, `https://xteam.xyz/${command}?file&text=${text}`, 'Resta', 'morou', m, {asSticker: true})
-                      }
-                      break
+                     await Resta.sendMedia(m.chat, `https://hadi-api.herokuapp.com/api/canvas/${command}?text=${encodeURIComponent(text)}`, 'hisoka', 'morou', m, {asSticker: true})
+                     }
+                     break
 	       case 'smeme': case 'stickmeme': case 'stikmeme': case 'stickermeme': case 'stikermeme': {
 	                  let respond = `Kirim/reply image/sticker dengan caption ${prefix + command} text1|text2`
 	                  if (!/image/.test(mime)) throw respond
                       if (!text) throw respond
-	                  m.reply(mess.wait)
+	                  if (isLimit < 1) throw mess.endLimit
+		              db.users[m.sender].limit -= 1 // -1 limit
+		              m.reply(`Satu limit terpakai\nSisa limit kamu : ${global.db.users[m.sender].limit}`)
                       atas = text.split('|')[0] ? text.split('|')[0] : '-'
                       bawah = text.split('|')[1] ? text.split('|')[1] : '-'
 	                  let dwnld = await quoted.download()
@@ -1836,6 +1908,9 @@ case 'style': case 'styletext': {
 /*************BATAS CONVER*********/
 	    case 'yts': case 'ytsearch': {
                 if (!text) throw `Example : ${prefix + command} story wa anime`
+                if (isLimit < 1) throw mess.endLimit
+		        db.users[m.sender].limit -= 1 // -1 limit
+		        m.reply(`Satu limit terpakai\nSisa limit kamu : ${global.db.users[m.sender].limit}`)
                 let yts = require("yt-search")
                 let search = await yts(text)
                 let teks = 'YouTube Search\n\n Result From '+text+'\n\n'
@@ -1883,15 +1958,21 @@ case 'style': case 'styletext': {
                  }
               break
    case 'pinterest': {
-              m.reply(mess.wait)
+   	       if (!text) throw 'Masukkan Query Title'
+              if (isLimit < 1) throw mess.endLimit      
 		      let { pinterest } = require('./lib/scraper')
               anu = await pinterest(text)
+              db.users[m.sender].limit -= 1 // -1 limit
+              m.reply(`Satu limit terpakai\nSisa limit kamu : ${global.db.users[m.sender].limit}`)
               result = anu[Math.floor(Math.random() * anu.length)]
               Resta.sendMessage(m.chat, { image: { url: result }, caption: '⭔ Media Url : '+result }, { quoted: m })
               }
               break
    case 'wallpaper': {
              if (!text) throw 'Masukkan Query Title'
+             if (isLimit < 1) throw mess.endLimit
+		     db.users[m.sender].limit -= 1 // -1 limit
+		     m.reply(`Satu limit terpakai\nSisa limit kamu : ${global.db.users[m.sender].limit}`)
 		     let { wallpaper } = require('./lib/scraper')
              anu = await wallpaper(text)
              result = anu[Math.floor(Math.random() * anu.length)]
@@ -1907,10 +1988,26 @@ case 'style': case 'styletext': {
               Resta.sendMessage(m.chat, buttonMessage, { quoted: m })
               }
               break
+  case 'jadwaltv':
+               if (isLimit < 1) throw mess.endLimit     
+              if (!q) return m.reply('Kirim perintah *#jadwaltv [channel]*')
+              m.reply(await jadwaltv(q))
+              db.users[m.sender].limit -= 1 // -1 limit
+              break
+   case 'gempa':
+               if (isLimit < 1) throw mess.endLimit
+               const tres = await Gempa()
+               var { Waktu, Lintang, Bujur, Magnitude, Kedalaman, Wilayah, Map } = tres.result
+               console.log(Map)
+               const captt = `Waktu : ${Waktu}\nLintang : ${Lintang}\nBujur : ${Bujur}\nWilayah : ${Wilayah}`
+               Resta.sendMessage(m.chat, { image : { url : Map }, caption : captt})
+               db.users[m.sender].limit -= 1 // -1 limit
+               break
   case 'wikimedia': {
+  	        if (isLimit < 1) throw mess.endLimit
               if (!text) throw 'Masukkan Query Title'
 		      let { wikimedia } = require('./lib/scraper')
-              anu = await wikimedia(text)
+		       anu = await wikimedia(text)
               result = anu[Math.floor(Math.random() * anu.length)]
               let buttons = [
               {buttonId: `wikimedia ${text}`, buttonText: {displayText: 'Next Image'}, type: 1} ]
@@ -1922,12 +2019,15 @@ case 'style': case 'styletext': {
                 headerType: 4
                 }
                 Resta.sendMessage(m.chat, buttonMessage, { quoted: m })
+                db.users[m.sender].limit -= 1 // -1 limit
                 }
                break
-     case 'lirik':                        
+     case 'lirik': 
+                if (isLimit < 1) throw mess.endLimit
                 if(!q) throw `Example : ${prefix + command} doraemon`
                 let song = await noapi.lirik(q)
-                Resta.sendImage(m.chat ,song.thumb,song.lirik, m) 
+                Resta.sendImage(m.chat ,song.thumb,song.lirik, m)
+                db.users[m.sender].limit -= 1 // -1 limit
                 break
     case 'cogan': case 'cowok':
 			    m.reply(mess.wait)
@@ -1974,16 +2074,19 @@ case 'style': case 'styletext': {
                     break 
         case 'ytmp3': case 'ytaudio': {
                     let { yta } = require('./lib/y2mate')
+                    if (isLimit < 1) throw mess.endLimit
                     if (!text) throw `Example : ${prefix + command} https://youtube.com/watch?v=PtFMh6Tccag%27 128kbps`
                     let quality = args[1] ? args[1] : '128kbps'
                     let media = await yta(text, quality)
                     if (media.filesize >= 200000) return m.reply('File Melebihi Batas '+util.format(media))
                     Resta.sendImage(m.chat, media.thumb, `⭔ Title : ${media.title}\n⭔ File Size : ${media.filesizeF}\n⭔ Url : ${isUrl(text)}\n⭔ Ext : MP3\n⭔ Resolusi : ${args[1] || '128kbps'}`, m)
                     Resta.sendMessage(m.chat, { audio: { url: media.dl_link }, mimetype: 'audio/mpeg', fileName: `${media.title}.mp3` }, { quoted: m })
+                    db.users[m.sender].limit -= 1 // -1 limit
                     }
                    break
         case 'ytmp4': case 'ytvideo': {
                    let { ytv } = require('./lib/y2mate')
+                   if (isLimit < 1) throw mess.endLimit
                    if (!text) throw `Example : ${prefix + command} https://youtube.com/watch?v=PtFMh6Tccag%27 360p`
                    let quality = args[1] ? args[1] : '360p'
                    let media = await ytv(text, quality)
@@ -2040,9 +2143,10 @@ case 'style': case 'styletext': {
                  }
                 break
    case 'tiktoknowm': {
+   	         if (isLimit < 1) throw mess.endLimit
                 if (!q) throw `Example : ${prefix + command} https://vt.tiktok.com/ZSdpahEe5/?k=1`
                 if (!isUrl(q)) throw m.reply(mess.link)  
-                if (!text.includes('tiktok.com')) throw m.reply(mess.link) 
+                if (!text.includes('https://vt.tiktok.com')) throw m.reply(mess.link) 
                 noapi.ttdownloader(`${q}`) 
                .then(result => {
                 const { wm, nowm, audio } = result
@@ -2057,22 +2161,26 @@ case 'style': case 'styletext': {
                  headerType: 5
                  }
                  Resta.sendMessage(m.chat, buttonMessage, { quoted: m })
+                 db.users[m.sender].limit -= 1 // -1 limit
                  }) 
                  }
                 break
    case 'tiktokmp3':
    case 'tiktokmusic':{
+   	       if (isLimit < 1) throw mess.endLimit
               if (!q) return reply('Linknya?')
-              if (!text.includes('tiktok.com')) throw m.reply(mess.link) 
+              if (!text.includes('https://vt.tiktok.com')) throw m.reply(mess.link) 
               const musim_rambutan = await TiktokDownloader(`${q}`).catch(e => {
               m.reply (mess.erro) 
               }) 
                console.log(musim_rambutan)
                const musim_duren_a = musim_rambutan.result.nowatermark
                Resta.sendMessage(from, { audio: { url: musim_duren_a }, mimetype: 'audio/mp4' }, { quoted: m })
+               db.users[m.sender].limit -= 1 // -1 limit
                }
               break
     case 'twitdl': case 'twitter': {
+    	        if (isLimit < 1) throw mess.endLimit
                 if (!q) throw `Example : ${prefix + command} https://twitter.com/britneyspears/status/1535429257614217219?s=20`
                 if (!isUrl(q)) throw m.reply(mess.erro)  
                 if (!text.includes('twitter.com')) throw m.reply(mess.link) 
@@ -2089,10 +2197,12 @@ case 'style': case 'styletext': {
                  headerType: 5
                  }
                  Resta.sendMessage(m.chat, buttonMessage, { quoted: m })
+                 db.users[m.sender].limit -= 1 // -1 limit
                  }) 
                  }
                  break
        case 'umma': case 'ummadl': {
+       	     if (isLimit < 1) throw mess.endLimit
 	            if (!text) throw `Example : ${prefix + command} https://umma.id/channel/video/post/gus-arafat-sumber-kecewa-84464612933698`
                 let { umma } = require('./lib) scraper')
 		        let anu = await umma(isUrl(text)[0])
@@ -2118,12 +2228,85 @@ Untuk Download Media Silahkan Klik salah satu Button dibawah ini atau masukkan c
 		     } else if (anu.type == 'image') {
 		     anu.media.map(async (url) => {
 		     Resta.sendMessage(m.chat, { image: { url }, caption: `⭔ Title : ${anu.title}\n⭔ Author : ${anu.author.name}\n⭔ Like : ${anu.like}\n⭔ Caption : ${anu.caption}` }, { quoted: m })
+		     db.users[m.sender].limit -= 1 // -1 limit
 		     })
 		     }
 	         }
 	         break
+	            
 /*************DOWNLOAD MENU**********/
-
+     case 'ahegao':{
+                 m.reply(mess.wait)
+                 var ahegao = JSON.parse(fs.readFileSync('./lib/ahegao.json'))
+                 var hasil = pickRandom(ahegao)
+                 let buttons = [
+                {buttonId: `${command}`, buttonText: {displayText: 'Next Image'}, type: 1} ]
+                 let buttonMessage = {
+                 image: { url: hasil },
+                 caption: `☕ Random ${command}`,
+                 footer: Resta.user.name,
+                 buttons: buttons,
+                 headerType: 4
+                 }
+                 Resta.sendMessage(m.chat, buttonMessage, { quoted: m })
+                 }
+                 break
+       case 'blowjob':{
+                 m.reply(mess.wait)
+                 var blowjob = JSON.parse(fs.readFileSync('./lib/blowjob.json'))
+                 var hasil = pickRandom(blowjob)
+                  await Resta.sendVideoAsSticker(m.chat, hasil, m, { packname: global.packname, author: global.packname2 })
+                 }
+                 break
+       case 'nsfwass':{
+                 m.reply(mess.wait)
+                 var ass = JSON.parse(fs.readFileSync('./lib/ass.json'))
+                 var hasil = pickRandom(ass)
+                 let buttons = [
+                {buttonId: `${command}`, buttonText: {displayText: 'Next Image'}, type: 1} ]
+                 let buttonMessage = {
+                 image: { url: hasil },
+                 caption: `☕ Random ${command}`,
+                 footer: Resta.user.name,
+                 buttons: buttons,
+                 headerType: 4
+                 }
+                 Resta.sendMessage(m.chat, buttonMessage, { quoted: m })
+                 }
+                 break
+        case 'hentai':{
+                 m.reply(mess.wait)
+                 var hentai = JSON.parse(fs.readFileSync('./lib/hentai.json'))
+                 var hasil = pickRandom(hentai)
+                 let buttons = [
+                {buttonId: `${command}`, buttonText: {displayText: 'Next Image'}, type: 1} ]
+                 let buttonMessage = {
+                 image: { url: hasil },
+                 caption: `☕ Random ${command}`,
+                 footer: Resta.user.name,
+                 buttons: buttons,
+                 headerType: 4
+                 }
+                 Resta.sendMessage(m.chat, buttonMessage, { quoted: m })
+                 }
+                 break
+    case 'nsfwbdsm':{
+                 m.reply(mess.wait)
+                 var bdsm= JSON.parse(fs.readFileSync('./lib/bdsm.json'))
+                 var hasil = pickRandom(bdsm)
+                 let buttons = [
+                {buttonId: `${command}`, buttonText: {displayText: 'Next Image'}, type: 1} ]
+                 let buttonMessage = {
+                 image: { url: hasil },
+                 caption: `☕ Random ${command}`,
+                 footer: Resta.user.name,
+                 buttons: buttons,
+                 headerType: 4
+                 }
+                 Resta.sendMessage(m.chat, buttonMessage, { quoted: m })
+                 }
+                 break
+/*************BATAS NSFW***********/
       case 'asupan':
                  if (!m.isGroup) throw mess.group
                  m.reply(mess.wait)
@@ -2465,11 +2648,13 @@ case 'couple': {
 /**************BATAS FUN MRNU*********/
             case 'waifu': case 'loli':
             case 'cry':case 'kill':case 'hug':case 'pat':case 'lick':case 'kiss':case 'bite':case 'yeet':case 'neko':case 'bully':case 'bonk':case 'wink':case 'poke':case 'nom':case 'slap':case 'smile':case 'wave':case 'awoo':case 'blush':case 'smug':case 'glomp':case 'happy':case 'dance':case 'cringe':case 'highfive':case 'shinobu':case 'megumin':case 'handhold':
+                    if (isLimit < 1) throw mess.endLimit
 					m.reply(mess.wait)
 					axios.get(`https://api.waifu.pics/sfw/waifu`)
 					.then(({data}) => {
 					var but = [{buttonId: `${command}`, buttonText: { displayText: "Get Again Pict" }, type: 1 }]
 				    Resta.sendMessage(m.chat, { caption: "Random Foto Anime", image: { url: data.url }, buttons: but, footer: 'Pencet tombol dibawah untuk foto selanjutnya' }, { quoted: m })
+				    db.users[m.sender].limit -= 1 // -1 limit
 					})
 					break
 		case 'anime': { 
@@ -2569,6 +2754,7 @@ muslim
 		       }
 		       break
 case 'alquran': {
+	           if (isLimit < 1) throw mess.endLimit
 		       if (!args[0]) throw `Contoh penggunaan:\n${prefix + command} 1 2\n\nmaka hasilnya adalah surah Al-Fatihah ayat 2 beserta audionya, dan ayatnya 1 aja`
 		       if (!args[1]) throw `Contoh penggunaan:\n${prefix + command} 1 2\n\nmaka hasilnya adalah surah Al-Fatihah ayat 2 beserta audionya, dan ayatnya 1 aja`
 		       let res = await fetchJson(`https://islamic-api-indonesia.herokuapp.com/api/data/quran?surah=${args[0]}&ayat=${args[1]}`)
@@ -2579,6 +2765,7 @@ case 'alquran': {
 ( Q.S ${res.result.data.surah.name.transliteration.id} : ${res.result.data.number.inSurah} )`
 		        m.reply(txt)
 		        Resta.sendMessage(m.chat, {audio: { url: res.result.data.audio.primary }, mimetype: 'audio/mpeg'}, { quoted : m })
+		        db.users[m.sender].limit -= 1 // -1 limit
 		       }
 		        break
    case 'tafsirsurah': {
@@ -2616,123 +2803,155 @@ case 'alquran': {
             case 'romantic-double': case 'teks-cup': case 'golden-roses':
             case 'love-messages': case 'funny-cup': case 'flower-hearth':
             case 'burn-paper':  case 'romantic-messages': case 'flaming-fire': case 'metalic-gold': case 'under-grass':   case 'wood-hearth':{
+            if (isLimit < 1) throw mess.endLimit
             if (!q) throw `Example : ${prefix + command} nama lu`
             m.reply (mess.wait) 
             Resta.sendMessage(m.chat, {caption: "© 🤖𝚁𝚠•𝙱𝚘𝚝~🤖", image: { url: `https://hadi-api.herokuapp.com/api/photoxy/${command}?text=${q}`}}, {quoted: m})
+            db.users[m.sender].limit -= 1 // -1 limit
              }
             break
   case 'horor':{
-        	if (!q) throw `Example : ${prefix + command} nama lu`
-            db.users[m.sender].limit -= 1 // -1 limit
+  	      if (isLimit < 1) throw mess.endLimit
+        	if (!q) throw `Example : ${prefix + command} nama lu`          
             let link = `https://textpro.me/horror-blood-text-effect-online-883.html`
             let anui = await textpro(link, q)
             m.reply(`Tunggu Sebentar Sedang Membuat Makernya Sekitar 1 Menit Kurang`) 
             console.log(anui)
             Resta.sendMessage(m.chat, {image:{url:anui}, caption: "© 🤖𝚁𝚠•𝙱𝚘𝚝~🤖"}, {quoted:m})
+            db.users[m.sender].limit -= 1 // -1 limit
             }
            break
 case 'whitebear':{
+	        if (isLimit < 1) throw mess.endLimit
         	if (!q) throw `Example : ${prefix + command} nama lu`
-            db.users[m.sender].limit -= 1 // -1 limit
             let link = `https://textpro.me/online-black-and-white-bear-mascot-logo-creation-1012.html`
             let anui = await textpro(link, q)
             m.reply(mess.wait) 
             console.log(anui)
             Resta.sendMessage(m.chat, {image:{url:anui}, caption: "© 🤖𝚁𝚠•𝙱𝚘𝚝~🤖"}, {quoted:m})
+            db.users[m.sender].limit -= 1 // -1 limit
+            }
+           break
+ case 'glow':{
+ 	       if (isLimit < 1) throw mess.endLimit
+        	if (!q) throw `Example : ${prefix + command} nama lu`
+            let link = `https://textpro.me/free-advanced-glow-text-effect-873.html`
+            let anui = await textpro(link, q)
+            m.reply(mess.wait) 
+            console.log(anui)
+            Resta.sendMessage(m.chat, {image:{url:anui}, caption: "© 🤖𝚁𝚠•𝙱𝚘𝚝~🤖"}, {quoted:m})
+            db.users[m.sender].limit -= 1 // -1 limit
             }
            break
  case 'thunder':{
+ 	       if (isLimit < 1) throw mess.endLimit
         	if (!q) throw `Example : ${prefix + command} nama lu`
-            db.users[m.sender].limit -= 1 // -1 limit
             let link = `https://textpro.me/create-thunder-text-effect-online-881.html`
             let anui = await textpro(link, q)
             m.reply(mess.wait) 
             console.log(anui)
             Resta.sendMessage(m.chat, {image:{url:anui}, caption: "© 🤖𝚁𝚠•𝙱𝚘𝚝~🤖"}, {quoted:m})
+            db.users[m.sender].limit -= 1 // -1 limit
             }
            break
  case 'blackpink':{
+        	if (isLimit < 1) throw mess.endLimit
         	if (!q) throw `Example : ${prefix + command} nama lu`
-            db.users[m.sender].limit -= 1 // -1 limit
             let link = `https://textpro.me/create-blackpink-logo-style-online-1001.html`
             let anui = await textpro(link, q)
             m.reply(mess.wait) 
             console.log(anui)
             Resta.sendMessage(m.chat, {image:{url:anui}, caption: "© 🤖𝚁𝚠•𝙱𝚘𝚝~🤖"}, {quoted:m})
+            db.users[m.sender].limit -= 1 // -1 limit
             }
            break
  case 'neon':{
+        	if (isLimit < 1) throw mess.endLimit
         	if (!q) throw `Example : ${prefix + command} nama lu`
-            db.users[m.sender].limit -= 1 // -1 limit
             let link = `https://textpro.me/neon-light-text-effect-online-882.html`
             let anui = await textpro(link, q)
             m.reply(mess.wait) 
             console.log(anui)
             Resta.sendMessage(m.chat, {image:{url:anui}, caption: "© 🤖𝚁𝚠•𝙱𝚘𝚝~🤖"}, {quoted:m})
+            db.users[m.sender].limit -= 1 // -1 limit
             }
            break
 case 'matrix':{
+        	if (isLimit < 1) throw mess.endLimit
         	if (!q) throw `Example : ${prefix + command} nama lu`
-            db.users[m.sender].limit -= 1 // -1 limit
             let link = `https://textpro.me/matrix-style-text-effect-online-884.html`
             let anui = await textpro(link, q)
             m.reply(mess.wait) 
             console.log(anui)
             Resta.sendMessage(m.chat, {image:{url:anui}, caption: "© 🤖𝚁𝚠•𝙱𝚘𝚝~🤖"}, {quoted:m})
+            db.users[m.sender].limit -= 1 // -1 limit
             }
            break
   case 'sky':{
+        	if (isLimit < 1) throw mess.endLimit
         	if (!q) throw `Example : ${prefix + command} nama lu`
-            db.users[m.sender].limit -= 1 // -1 limit
             let link = `https://textpro.me/create-a-cloud-text-effect-on-the-sky-online-1004.html`
             let anui = await textpro(link, q)
             m.reply(mess.wait) 
             console.log(anui)
             Resta.sendMessage(m.chat, {image:{url:anui}, caption: "© 🤖𝚁𝚠•𝙱𝚘𝚝~🤖"}, {quoted:m})
+            db.users[m.sender].limit -= 1 // -1 limit
             }
            break
  case 'joker':{
+        	if (isLimit < 1) throw mess.endLimit
         	if (!q) throw `Example : ${prefix + command} nama lu`
-            db.users[m.sender].limit -= 1 // -1 limit
             let link = `https://textpro.me/create-logo-joker-online-934.html`
             let anui = await textpro(link, q)
             m.reply(mess.wait) 
             console.log(anui)
             Resta.sendMessage(m.chat, {image:{url:anui}, caption: "© 🤖𝚁𝚠•𝙱𝚘𝚝~🤖"}, {quoted:m})
+            db.users[m.sender].limit -= 1 // -1 limit
+            }
+           break
+   case 'generator':{
+        	if (isLimit < 1) throw mess.endLimit
+        	if (!q) throw `Example : ${prefix + command} nama lu`
+            let link = `https://textpro.me/online-thunder-text-effect-generator-1031.html`
+            let anui = await textpro(link, q)
+            m.reply(mess.wait) 
+            console.log(anui)
+            Resta.sendMessage(m.chat, {image:{url:anui}, caption: "© 🤖𝚁𝚠•𝙱𝚘𝚝~🤖"}, {quoted:m})
+            db.users[m.sender].limit -= 1 // -1 limit
             }
            break
 /*************BATAS MAKER OKY***********/
             case 'setcmd': {
-                if (!m.quoted) throw 'Reply Pesan!'
-                if (!m.quoted.fileSha256) throw 'SHA256 Hash Missing'
-                if (!text) throw `Untuk Command Apa?`
-                let hash = m.quoted.fileSha256.toString('base64')
-                if (global.db.data.sticker[hash] && global.db.data.sticker[hash].locked) throw 'You have no permission to change this sticker command'
-                global.db.data.sticker[hash] = {
+                    if (!m.quoted) throw 'Reply Pesan!'
+                    if (!m.quoted.fileSha256) throw 'SHA256 Hash Missing'
+                    if (!text) throw `Untuk Command Apa?`
+                    let hash = m.quoted.fileSha256.toString('base64')
+                    if (global.db.data.sticker[hash] && global.db.data.sticker[hash].locked) throw 'You have no permission to change this sticker command'
+                    global.db.data.sticker[hash] = {
                     text,
                     mentionedJid: m.mentionedJid,
                     creator: m.sender,
                     at: + new Date,
                     locked: false,
-                }
-                m.reply(`Done!`)
-            }
-            break
-            case 'delcmd': {
-                let hash = m.quoted.fileSha256.toString('base64')
-                if (!hash) throw `Tidak ada hash`
-                if (global.db.data.sticker[hash] && global.db.data.sticker[hash].locked) throw 'You have no permission to delete this sticker command'              
-                delete global.db.data.sticker[hash]
-                m.reply(`Done!`)
-            }
-            break
-            case 'listcmd': {
-                let teks = `
+                    }
+                    m.reply(`Done!`)
+                    }
+                    break
+        case 'delcmd': {
+                    let hash = m.quoted.fileSha256.toString('base64')
+                    if (!hash) throw `Tidak ada hash`
+                    if (global.db.data.sticker[hash] && global.db.data.sticker[hash].locked) throw 'You have no permission to delete this sticker command'              
+                    delete global.db.data.sticker[hash]
+                    m.reply(`Done!`)
+                     }
+                     break
+        case 'listcmd': {
+                  let teks = `
 *List Hash*
 Info: *bold* hash is Locked
 ${Object.entries(global.db.data.sticker).map(([key, value], index) => `${index + 1}. ${value.locked ? `*${key}*` : key} : ${value.text}`).join('\n')}
 `.trim()
-                Resta.sendText(m.chat, teks, m, { mentions: Object.values(global.db.data.sticker).map(x => x.mentionedJid).reduce((a,b) => [...a, ...b], []) })
+               Resta.sendText(m.chat, teks, m, { mentions: Object.values(global.db.data.sticker).map(x => x.mentionedJid).reduce((a,b) => [...a, ...b], []) })
             }
             break
             case 'lockcmd': {
@@ -2743,72 +2962,67 @@ ${Object.entries(global.db.data.sticker).map(([key, value], index) => `${index +
                 if (!(hash in global.db.data.sticker)) throw 'Hash not found in database'
                 global.db.data.sticker[hash].locked = !/^un/i.test(command)
                 m.reply('Done!')
-            }
-            break
-            case 'addmsg': {
+                }
+                break
+     case 'addmsg': {
                 if (!m.quoted) throw 'Reply Message Yang Ingin Disave Di Database'
                 if (!text) throw `Example : ${prefix + command} nama file`
                 let msgs = global.db.data.database
                 if (text.toLowerCase() in msgs) throw `'${text}' telah terdaftar di list pesan`
                 msgs[text.toLowerCase()] = quoted.fakeObj
-m.reply(`Berhasil menambahkan pesan di list pesan sebagai '${text}'
-    
-Akses dengan ${prefix}getmsg ${text}
-
-Lihat list Pesan Dengan ${prefix}listmsg`)
-            }
-            break
-            case 'getmsg': {
+                m.reply(`Berhasil menambahkan pesan di list pesan sebagai '${text}'  
+                Akses dengan ${prefix}getmsg ${text}
+                Lihat list Pesan Dengan ${prefix}listmsg`)
+                }
+                break
+     case 'getmsg': {
                 if (!text) throw `Example : ${prefix + command} file name\n\nLihat list pesan dengan ${prefix}listmsg`
                 let msgs = global.db.data.database
                 if (!(text.toLowerCase() in msgs)) throw `'${text}' tidak terdaftar di list pesan`
                 Resta.copyNForward(m.chat, msgs[text.toLowerCase()], true)
-            }
-            break
-            case 'listmsg': {
+                }
+                break
+    case 'listmsg': {
                 let msgs = JSON.parse(fs.readFileSync('./src/database.json'))
-	        let seplit = Object.entries(global.db.data.database).map(([nama, isi]) => { return { nama, ...isi } })
-		let teks = '「 LIST DATABASE 」\n\n'
-		for (let i of seplit) {
-		    teks += `⬡ *Name :* ${i.nama}\n⬡ *Type :* ${getContentType(i.message).replace(/Message/i, '')}\n────────────────────────\n\n`
-	        }
-	        m.reply(teks)
-	    }
-	    break
-            case 'delmsg': case 'deletemsg': {
-	        let msgs = global.db.data.database
-	        if (!(text.toLowerCase() in msgs)) return m.reply(`'${text}' tidak terdaftar didalam list pesan`)
-		delete msgs[text.toLowerCase()]
-		m.reply(`Berhasil menghapus '${text}' dari list pesan`)
-            }
-	    break
-	case 'limit':
-            m.reply(`*Sisa Limit Anda : ${global.db.users[m.sender].limit}*`)
-      break          
-            case 'ping': case 'botstatus': case 'statusbot': {
+	            let seplit = Object.entries(global.db.data.database).map(([nama, isi]) => { return { nama, ...isi } })
+		        let teks = '「 LIST DATABASE 」\n\n'
+		        for (let i of seplit) {
+		        teks += `⬡ *Name :* ${i.nama}\n⬡ *Type :* ${getContentType(i.message).replace(/Message/i, '')}\n────────────────────────\n\n`
+	            }
+	            m.reply(teks)
+	            }
+	            break
+    case 'delmsg': case 'deletemsg': {
+	           let msgs = global.db.data.database
+	           if (!(text.toLowerCase() in msgs)) return m.reply(`'${text}' tidak terdaftar didalam list pesan`)
+		       delete msgs[text.toLowerCase()]
+		       m.reply(`Berhasil menghapus '${text}' dari list pesan`)
+               }
+	           break          
+     case 'ping': case 'botstatus': case 'statusbot': {
                 const used = process.memoryUsage()
                 const cpus = os.cpus().map(cpu => {
-                    cpu.total = Object.keys(cpu.times).reduce((last, type) => last + cpu.times[type], 0)
-			        return cpu
+                cpu.total = Object.keys(cpu.times).reduce((last, type) => last + cpu.times[type], 0)
+			    return cpu
                 })
                 const cpu = cpus.reduce((last, cpu, _, { length }) => {
-                    last.total += cpu.total
-                    last.speed += cpu.speed / length
-                    last.times.user += cpu.times.user
-                    last.times.nice += cpu.times.nice
-                    last.times.sys += cpu.times.sys
-                    last.times.idle += cpu.times.idle
-                    last.times.irq += cpu.times.irq
-                    return last
+                last.total += cpu.total
+                last.speed += cpu.speed / length
+                last.times.user += cpu.times.user
+                last.times.nice += cpu.times.nice
+                last.times.sys += cpu.times.sys
+                last.times.idle += cpu.times.idle
+                last.times.irq += cpu.times.irq
+                return last
                 }, {
-                    speed: 0,
-                    total: 0,
-                    times: {
-			            user: 0,
-			            nice: 0,
-			            sys: 0,
-			            idle: 0,
-			            irq: 0
+               speed: 0,
+               total: 0,
+               times: {
+	           user: 0,
+		       nice: 0,
+		       sys: 0,
+			   idle: 0,
+			   irq: 0
                 }
                 })
                 let timestamp = speed()
@@ -2828,28 +3042,11 @@ ${cpus[0] ? `_Total CPU Usage_
 ${cpus[0].model.trim()} (${cpu.speed} MHZ)\n${Object.keys(cpu.times).map(type => `- *${(type + '*').padEnd(6)}: ${(100 * cpu.times[type] / cpu.total).toFixed(2)}%`).join('\n')}
 _CPU Core(s) Usage (${cpus.length} Core CPU)_
 ${cpus.map((cpu, i) => `${i + 1}. ${cpu.model.trim()} (${cpu.speed} MHZ)\n${Object.keys(cpu.times).map(type => `- *${(type + '*').padEnd(6)}: ${(100 * cpu.times[type] / cpu.total).toFixed(2)}%`).join('\n')}`).join('\n\n')}` : ''}
-                `.trim()
-                m.reply(respon)
-            }
-            break
-            case 'speedtest': {
-            m.reply('Testing Speed...')
-            let cp = require('child_process')
-            let { promisify } = require('util')
-            let exec = promisify(cp.exec).bind(cp)
-          let o
-          try {
-          o = await exec('python speed.py')
-          } catch (e) {
-          o = e
-         } finally {
-        let { stdout, stderr } = o
-        if (stdout.trim()) m.reply(stdout)
-        if (stderr.trim()) m.reply(stderr)
-            }
-            }
-            break
-            case 'inspect': {
+                 `.trim()
+                  m.reply(respon)
+                    }
+                  break
+      case 'inspect': {
                   if (!args[0]) return m.reply("Linknya?")
                   let linkRegex = args.join(" ")
                   let coded = linkRegex.split("https://chat.whatsapp.com/")[1]
@@ -2885,57 +3082,7 @@ tekse = `     「 Group Link Inspector 」
                      })
                      }
                      break
-                     
-//******OWNER MENU***////
-            case 'setppbot': {
-                if (!isCreator) throw mess.owner
-                if (!quoted) throw `Kirim/Reply Image Dengan Caption ${prefix + command}`
-                if (!/image/.test(mime)) throw `Kirim/Reply Image Dengan Caption ${prefix + command}`
-                if (/webp/.test(mime)) throw `Kirim/Reply Image Dengan Caption ${prefix + command}`
-                let media = await Resta.downloadAndSaveMediaMessage(quoted)
-                await Resta.updateProfilePicture(botNumber, { url: media }).catch((err) => fs.unlinkSync(media))
-                m.reply(mess.success)
-                }
-                break
-     case 'owner': case 'creator': {
-                Resta.sendContact(m.chat, global.owner, m)
-                 }
-                break
-     case 'join': {
-                if (!isCreator) throw mess.owner
-                if (!text) throw 'Masukkan Link Group!'
-                if (!isUrl(args[0]) && !args[0].includes('whatsapp.com')) throw 'Link Invalid!'
-                m.reply(mess.wait)
-                let result = args[0].split('https://chat.whatsapp.com/')[1]
-                await Resta.groupAcceptInvite(result).then((res) => m.reply(jsonformat(res))).catch((err) => m.reply(jsonformat(err)))
-                 }
-                break
-     case 'leave': {
-                if (!isCreator) throw mess.owner
-                await Resta.groupLeave(m.chat).then((res) => m.reply(jsonformat(res))).catch((err) => m.reply(jsonformat(err)))
-                  }
-                 break
-       case 'setexif': {
-                 if (!isCreator) throw mess.owner
-                 if (!text) throw `Example : ${prefix + command} packname|author`
-                 global.packname = text.split("|")[0]
-                 global.author = text.split("|")[1]
-                 m.reply(`Exif berhasil diubah menjadi\n\n⭔ Packname : ${global.packname}\n⭔ Author : ${global.author}`)
-                }
-                break
-      case 'block': {
-		        if (!isCreator) throw mess.owner
-		        let users = m.mentionedJid[0] ? m.mentionedJid[0] : m.quoted ? m.quoted.sender : text.replace(/[^0-9]/g, '')+'@s.whatsapp.net'
-		        await Resta.updateBlockStatus(users, 'block').then((res) => m.reply(jsonformat(res))).catch((err) => m.reply(jsonformat(err)))
-	            }
-	            break
-     case 'unblock': {
-		        if (!isCreator) throw mess.owner
-		        let users = m.mentionedJid[0] ? m.mentionedJid[0] : m.quoted ? m.quoted.sender : text.replace(/[^0-9]/g, '')+'@s.whatsapp.net'
-		        await Resta.updateBlockStatus(users, 'unblock').then((res) => m.reply(jsonformat(res))).catch((err) => m.reply(jsonformat(err)))
-	             }
-	           break
-  case 'donasi': case 'sewabot': case 'sewa': case 'buypremium': case 'donate': {
+                     case 'donasi': case 'sewabot': case 'sewa': case 'buypremium': case 'donate': {
                 Resta.sendMessage(m.chat, { image: { url: 'https://telegra.ph/file/cc3541a2a6b927d3f94aa.jpg' }, caption: `*Berikut List Harga Sewa Bot*
 
 _Sewa Bot Untuk dimasukin kedalam group dan digunakan di dalam group_
@@ -2977,6 +3124,55 @@ Minat? Chat Owner Bot / Klik Link Dibawah.)` }, { quoted: m })
                   m.reply('Script : https://github.com/Restaa/bot-md\n\n\n Dont Forget Donate')
                   }
                   break
+      case 'owner': case 'creator': {
+                Resta.sendContact(m.chat, global.owner, m)
+                 }
+                break
+//******OWNER MENU***////
+            case 'setppbot': {
+                if (!isCreator) throw mess.owner
+                if (!quoted) throw `Kirim/Reply Image Dengan Caption ${prefix + command}`
+                if (!/image/.test(mime)) throw `Kirim/Reply Image Dengan Caption ${prefix + command}`
+                if (/webp/.test(mime)) throw `Kirim/Reply Image Dengan Caption ${prefix + command}`
+                let media = await Resta.downloadAndSaveMediaMessage(quoted)
+                await Resta.updateProfilePicture(botNumber, { url: media }).catch((err) => fs.unlinkSync(media))
+                m.reply(mess.success)
+                }
+                break
+     case 'join': {
+                if (!isCreator) throw mess.owner
+                if (!text) throw 'Masukkan Link Group!'
+                if (!isUrl(args[0]) && !args[0].includes('whatsapp.com')) throw 'Link Invalid!'
+                m.reply(mess.wait)
+                let result = args[0].split('https://chat.whatsapp.com/')[1]
+                await Resta.groupAcceptInvite(result).then((res) => m.reply(jsonformat(res))).catch((err) => m.reply(jsonformat(err)))
+                 }
+                break
+     case 'leave': {
+                if (!isCreator) throw mess.owner
+                await Resta.groupLeave(m.chat).then((res) => m.reply(jsonformat(res))).catch((err) => m.reply(jsonformat(err)))
+                  }
+                 break
+       case 'setexif': {
+                 if (!isCreator) throw mess.owner
+                 if (!text) throw `Example : ${prefix + command} packname|author`
+                 global.packname = text.split("|")[0]
+                 global.author = text.split("|")[1]
+                 m.reply(`Exif berhasil diubah menjadi\n\n⭔ Packname : ${global.packname}\n⭔ Author : ${global.author}`)
+                }
+                break
+      case 'block': {
+		        if (!isCreator) throw mess.owner
+		        let users = m.mentionedJid[0] ? m.mentionedJid[0] : m.quoted ? m.quoted.sender : text.replace(/[^0-9]/g, '')+'@s.whatsapp.net'
+		        await Resta.updateBlockStatus(users, 'block').then((res) => m.reply(jsonformat(res))).catch((err) => m.reply(jsonformat(err)))
+	            }
+	            break
+     case 'unblock': {
+		        if (!isCreator) throw mess.owner
+		        let users = m.mentionedJid[0] ? m.mentionedJid[0] : m.quoted ? m.quoted.sender : text.replace(/[^0-9]/g, '')+'@s.whatsapp.net'
+		        await Resta.updateBlockStatus(users, 'unblock').then((res) => m.reply(jsonformat(res))).catch((err) => m.reply(jsonformat(err)))
+	             }
+	           break 
      case 'setmenu': {
                 if (!isCreator) throw mess.owner
                 let setbot = db.data.settings[botNumber]
@@ -3025,6 +3221,24 @@ Minat? Chat Owner Bot / Klik Link Dibawah.)` }, { quoted: m })
 *${ucapanWaktu}*
 Waktu : *${jam}*
 
+🎭 *Others Menu*
+├ ${sp}${prefix}setcmd
+├ ${sp}${prefix}delcmd
+├ ${sp}${prefix}listcmd
+├ ${sp}${prefix}lockcmd
+├ ${sp}${prefix}addmsg
+├ ${sp}${prefix}getmsg
+├ ${sp}${prefix}listmsg
+├ ${sp}${prefix}getmsg
+├ ${sp}${prefix}delmsg
+├ ${sp}${prefix}botstatus
+├ ${sp}${prefix}inspect
+├ ${sp}${prefix}donasi
+├ ${sp}${prefix}sewabot
+├ ${sp}${prefix}owner
+│
+└────⭓
+
 🎨 *Game Menu*
 ├ ${sp}${prefix}tebaklirik
 ├ ${sp}${prefix}tebakkuis
@@ -3051,6 +3265,8 @@ Waktu : *${jam}*
 ├ ${sp}${prefix}beli
 ├ ${sp}${prefix}darah
 ├ ${sp}${prefix}bacok
+├ ${sp}${prefix}limit
+├ ${sp}${prefix}buymonay
 │
 └────⭓
 
@@ -3265,6 +3481,8 @@ Waktu : *${jam}*
 ├ ${sp}${prefix}thunder
 ├ ${sp}${prefix}whitebear
 ├ ${sp}${prefix}horor
+├ ${sp}${prefix}glow
+├ ${sp}${prefix}generator
 ├ ${sp}${prefix}tiktokmaker
 │
 └────⭓
@@ -3272,6 +3490,17 @@ Waktu : *${jam}*
 🖋 *Magernulis Menu*
 ├ ${sp}${prefix}nulis
 ├ ${sp}${prefix}nuli2
+│
+└────⭓
+
+🙎‍♂️ *Owner Menu*
+├ ${sp}${prefix}setmenu
+├ ${sp}${prefix}setppbot
+├ ${sp}${prefix}join
+├ ${sp}${prefix}leave
+├ ${sp}${prefix}setexif
+├ ${sp}${prefix}block
+├ ${sp}${prefix}unblock
 │
 └────⭓
 
@@ -3343,13 +3572,13 @@ Waktu : *${jam}*
                     }
                 }
 
-                if (budy.startsWith('$')) {
-                    if (!isCreator) return m.reply(mess.owner)
-                    exec(budy.slice(2), (err, stdout) => {
-                        if(err) return m.reply(err)
-                        if (stdout) return m.reply(stdout)
+                   if (budy.startsWith('$')) {
+                   if (!isCreator) return m.reply(mess.owner)
+                   exec(budy.slice(2), (err, stdout) => {
+                   if(err) return m.reply(err)
+                   if (stdout) return m.reply(stdout)
                     })
-                }
+                    }
 		            if (isCmd && budy.toLowerCase() != undefined) {
 		            if (m.chat.endsWith('broadcast')) return
 		            if (m.isBaileys) return
@@ -3357,13 +3586,12 @@ Waktu : *${jam}*
 		            if (!(budy.toLowerCase() in msgs)) return
 		            Resta.opyNForward(m.chat, msgs[budy.toLowerCase()], true)
 		            }
-		}
-    } catch (err) {
-     m.reply(util.format(err))
-    }
-}
-
-
+		            }
+                    } catch (err) {
+                   m.reply(util.format(err)) 
+                   console.log(err)
+                   }
+                   }
 let file = require.resolve(__filename)
 fs.watchFile(file, () => {
 	fs.unwatchFile(file)
