@@ -12,6 +12,7 @@ const os = require('os')
 const { TiktokDownloader } = require('./lib/tiktokdl') 
 const moment = require('moment-timezone')
 const { JSDOM } = require('jsdom')
+const { aiovideodl } = require('./lib/scraper.js')
 const speed = require('performance-now')
 const { performance } = require('perf_hooks')
 const { Primbon } = require('scrape-primbon')
@@ -91,8 +92,8 @@ module.exports = Resta = async (Resta, m, chatUpdate, store) => {
         const isAdmins = m.isGroup ? groupAdmins.includes(m.sender) : false
 	   ///OTHERS///
 	    const isRakyat = isCreator || global.rkyt.map(v => v.replace(/[^0-9]/g, '') + '@s.whatsapp.net').includes(m.sender) || false
-	
-	
+        const welcm = m.isGroup ? wlcm.includes(m.chat) : false
+
 	        try {
             let isNumber = x => typeof x === 'number' && !isNaN(x)
             let limitUser = isRakyat ? global.limitawal.rakyat : global.limitawal.free
@@ -1610,6 +1611,28 @@ ${vote[m.chat][2].map((v, i) => `├ ${i + 1}. @${v.split`@`[0]}`).join('\n')}
                      }
                      }
                      break
+            case 'welcome': {
+                   if (!m.isGroup) throw mess.group
+                   if (!isBotAdmins) throw mess.botAdmin
+                   if (!isAdmins) throw mess.admin
+                   if (args[0] === "enable") {
+                   if (welcm) return m.reply(`Sudah Aktif Sebelumnya`)
+                   wlcm.push(from)
+                    m.reply(`Welcome Aktif !`)
+                    } else if (args[0] === "disable") {
+                    if (!welcm) return m.reply(`Sudah Tidak Aktif Sebelumnya`)
+                    let off = wlcm.indexOf(from)
+                    wlcm.splice(off, 1)
+                    m.reply(`Welcome Tidak Aktif !`)
+                     } else {
+                     let buttons = [
+                     { buttonId: 'Welcome enable', buttonText: { displayText: 'On' }, type: 1 },
+                     { buttonId: 'Welcome disable', buttonText: { displayText: 'Off' }, type: 1 }
+                     ]
+                     await Resta.sendButtonText(m.chat, buttons, `Mode Welcome`, Resta.user.name, m)
+                     }
+                     }
+                     break
           case 'mute': {
                     if (!m.isGroup) throw mess.group
                     if (!isBotAdmins) throw mess.botAdmin
@@ -2233,7 +2256,6 @@ Untuk Download Media Silahkan Klik salah satu Button dibawah ini atau masukkan c
 		     }
 	         }
 	         break
-	            
 /*************DOWNLOAD MENU**********/
      case 'ahegao':{
                  m.reply(mess.wait)
@@ -3335,6 +3357,7 @@ Waktu : *${jam}*
 ├ ${sp}${prefix}editinfo
 ├ ${sp}${prefix}antilink
 ├ ${sp}${prefix}mute
+├ ${sp}${prefix}welcome
 ├ ${sp}${prefix}linkgroup
 ├ ${sp}${prefix}ephemeral
 ├ ${sp}${prefix}infochat

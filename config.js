@@ -14,6 +14,7 @@ global.APIKeys = {
 // Other
 global.owner = ['6283853152230']
 global.rkyt = []
+global.wlcm = []
 global.packname = '🤖𝚁𝚠•𝙱𝚘𝚝~🤖'
 global.author = 'WhatsApp Bot'
 global.sessionName = 'RestaMd'

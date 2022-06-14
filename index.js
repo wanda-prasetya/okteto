@@ -103,42 +103,26 @@ Resta.ev.on('groups.update', async pea => {
      }
     })
 
-Resta.ev.on('group-participants.update', async (anu) => {
-        console.log(anu)
-   // **    if (!wlcm.includes(anu.id)) return*/
-        try {
-            let metadata = await Resta.groupMetadata(anu.id)
-            let participants = anu.participants
-            for (let num of participants) {
-                // Get Profile Picture User
-                try {
-                    ppuser = await Resta.profilePictureUrl(num, 'image')
-                } catch {
-                    ppuser = 'https://i0.wp.com/www.gambarunik.id/wp-content/uploads/2019/06/Top-Gambar-Foto-Profil-Kosong-Lucu-Tergokil-.jpg'
-                }
+     Resta.ev.on('group-participants.update', async (data) => {
+                if (!wlcm.includes(data.id)) return
+	            let metadata = await Resta.groupMetadata(data.id)
+                for (let i of data.participants) {
+		        try {
+		        var pp_user = await Resta.profilePictureUrl(i, 'image')
+		       } catch {
+		       var pp_user = 'https://i0.wp.com/www.gambarunik.id/wp-content/uploads/2019/06/Top-Gambar-Foto-Profil-Kosong-Lucu-Tergokil-.jpg'
+		       }
+		       if (data.action == "add") {
+		       Resta.sendMessage(data.id, { image: { url: pp_user }, caption: `Hallo @${i.split("@")[0]} Selamat Datang Di Grup ${metadata.subject}\nSilahkan Memperkenalkan Diri Anda`, mentions: [i] })
+		      } else if (data.action == "remove") {
+		      Resta.sendMessage(data.id, { image: { url: pp_user }, caption: `Goodbye @${i.split("@")[0]}`, mentions: [i] })
+		     }
+	       }
+	} catch (e) {
+	  console.log(e)
+	}
+  }
 
-                // Get Profile Picture Group
-                try {
-                    ppgroup = await Resta.profilePictureUrl(anu.id, 'image')
-                } catch {
-                    ppgroup = 'https://i0.wp.com/www.gambarunik.id/wp-content/uploads/2019/06/Top-Gambar-Foto-Profil-Kosong-Lucu-Tergokil-.jpg'
-                }
-let nama = await Resta.getName(num)
-memb = metadata.participants.length
-//
-WCome = await getBuffer(`https://hardianto.xyz/api/tools/welcomer?nama=${encodeURIComponent(nama)}&namaGb=${encodeURIComponent(metadata.subject)}&pepeGb=${encodeURIComponent(ppgroup)}&totalMem=${encodeURIComponent(memb)}&pepeUser=${encodeURIComponent(ppuser)}&bege=https://telegra.ph/file/d561876a112fea9777677.jpg&apikey=hardianto`)
-
-GBye = await getBuffer(`https://hardianto.xyz/api/tools/leave?nama=${encodeURIComponent(nama)}&namaGb=${encodeURIComponent(metadata.subject)}&pepeGb=${encodeURIComponent(ppgroup)}&totalMem=${encodeURIComponent(memb)}&pepeUser=${encodeURIComponent(ppuser)}&bege=https://telegra.ph/file/d561876a112fea9777677.jpg&apikey=hardianto`)
-                if (anu.action == 'add') {
-                    Resta.sendMessage(anu.id, { image: { url: `https://telegra.ph/file/d561876a112fea9777677.jpg` }, contextInfo: { mentionedJid: [num] }, caption: `Hi @${num.split("@")[0]}!!` })
-                } else if (anu.action == 'remove') {
-                    Resta.sendMessage(anu.id, { image: { url: `https://telegra.ph/file/d561876a112fea9777677.jpg` }, contextInfo: { mentionedJid: [num] }, caption: `@${num.split("@")[0]} Leaving To ${metadata.subject}` })
-                }
-            }
-        } catch (err) {
-            console.log(err)
-        }
-    })
     
 // Setting
     Resta.decodeJid = (jid) => {
